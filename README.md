@@ -1,7 +1,7 @@
 BaseApp USB-serial LCD/Keypad
 -----------------------------
 
-Supports HD44780 compatible LCDs. Enumerates as a serial com port, and can be
+Supports HD44780 compatible LCDs(in 4-bit mode). Enumerates as a serial com port, and can be
 used with software like LCD smartie for windows, or LCDproc etc. for
 linux using matrixorbital commands. Also supports upto 4x4 matrix keypad.
 
