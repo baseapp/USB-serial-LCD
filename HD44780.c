@@ -79,6 +79,8 @@ static unsigned char cursorPosition=1;//track current cursor position
 static struct _LCDdisplayControl{
 	unsigned char cursor:1;
 	unsigned char blink:1;
+        unsigned char brightness;
+        unsigned char contrast;
 } LCDdisplayControl; //track blink and cursor underline control bits
 
 //
@@ -183,23 +185,21 @@ void delayUS(const unsigned char delay)
 
 //backlight control
 //the LED draws a lot of power when it comes on
-void LCD_Backlight(unsigned char c){
-	unsigned char i;
+void LCD_Backlight(unsigned char c)
+{
+        LCDdisplayControl.brightness=255-c;
 
-	if(c){
-		//turn on slowly with PWM
-		for(i=0; i<255; i++){
-			LCD_BL=1; //backlight ON
-			delayUS(i);//on for increasing us
-			LCD_BL=0; //backlight OFF
-			delayUS((255-i));//off for decreasing us
-		}
-		LCD_BL=1; //exit with light ON
-	}else{
-		LCD_BL=0; //backlight off
-	}
+        CCPR1L=LCDdisplayControl.brightness>>2;
+        CCP1CONbits.DC1B=LCDdisplayControl.brightness&0x3;
 }
 
+void LCD_Contrast(unsigned char c)
+{
+        LCDdisplayControl.contrast=255-c;
+
+        CCPR2L=LCDdisplayControl.contrast>>2;
+        CCP2CONbits.DC2B=LCDdisplayControl.contrast&0x3;
+}
 
 //initialize LCD with standard features
 void HD44780_Init(void){
@@ -220,6 +220,7 @@ void HD44780_Init(void){
 	delayMS(15);//delay 15ms
 	LCDdisplayControl.cursor=CURSOROFF;
 	LCDdisplayControl.blink=BLINKOFF;
+        LCDdisplayControl.brightness=0;
 }
 
 //write to character generator RAM

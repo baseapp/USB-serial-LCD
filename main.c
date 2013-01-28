@@ -41,24 +41,21 @@ void send(unsigned char c);
 void main(void)
 {  
     unsigned char i,cmd, param[9];
-    //unsigned char t[]={"Hello World"};
 
     init();			//setup the crystal, pins, usb
 
     HD44780_Reset();//setup the LCD
     HD44780_Init();
-    LCD_Home();LCD_Clear();
-    LCD_Backlight(1);
-    strcpypgm2ram(stringBuffer, "Testing123");
-//    LCD_WriteString(stringBuffer);
-//    LCD_WriteChar('a');LCD_WriteChar('t');LCD_WriteChar('e');LCD_WriteChar('\n');LCD_WriteChar('s');LCD_WriteChar('3');
+    LCD_Home();
+    LCD_Clear();
+    LCD_Backlight(0);
 
     usbbufflush();	//setup the USB byte buffer
 
     delayMS(10);
 
     keypad_read_state();
-
+    
     while(1)
     {
         USBDeviceTasks();
@@ -68,8 +65,6 @@ void main(void)
         usbbufservice();//load any USB data into byte buffer
 
         cmd=waitforbyte();//wait for a byte from USB
-
-
 
         if(cmd!=MATRIX_ORBITAL_COMMAND)
         {//assume text, if 254 then enter command mode
@@ -112,8 +107,15 @@ void main(void)
                 case BLOCK_CURSER_OFF:
                     LCD_BlinkCursor(0);
                     break;
-                case BACKLIGHT_BRIGHTNESS://1 parameter (brightness)
+                case BACKLIGHT_BRIGHTNESS_SET://1 parameter (brightness)
+                case BACKLIGHT_BRIGHTNESS_SET_SAVE:
                     param[0]=waitforbyte();
+                    LCD_Backlight(param[0]);
+                    break;
+                case CONTRAST_SET://1 parameter (brightness)
+                case CONTRAST_SET_AND_SAVE:
+                    param[0]=waitforbyte();
+                    LCD_Contrast(param[0]);
                     break;
                 case CUSTOM_CHARACTER: //9 parameters (character #, 8 byte bitmap)
                     LCD_WriteCGRAM(waitforbyte());//write character address
@@ -154,7 +156,7 @@ void sendok(void)
 
 unsigned char waitforbyte(void)
 {
-	unsigned char inbuf;
+	unsigned char inbuf,togglebit=0;
 
         unsigned char temp;//calculate row number
         char output;
@@ -165,7 +167,7 @@ unsigned char waitforbyte(void)
 	//wait for more USB data
 	//services USB peripheral
 	while(1)
-        {
+        {            
             keypad_read_state();
 
             /* DO keypad stuff*/
@@ -236,12 +238,30 @@ static void init(void)
 	//CVRCON=0b00000000;
 
 	//make sure everything is input (should be on startup, but just in case)
-	TRISA=0xff;TRISB=0xff;TRISC=0xff;
+	TRISA=0xff;
+        TRISB=0xff;
+        TRISC=~0b0000111; //RC2 is pwm output, so TRIS=0,ANSEL=0, tris cleared later
+
+        LCD_BL=0;//backlight off
+
+        //pwm config for LCD_BL and LCD_VO
+        PR2 = 63;//period
+        CCP1CONbits.CCP1M=0b1111;//configure ccp module for pwm
+        CCP2CONbits.CCP2M=0b1111;//configure ccp module for pwm
+        //duty cycle is (CCPR1L:DC1B)/(4*(PR2+1))
+        CCPR1L=0xff;
+        CCPR2L=0xff;
+        CCP1CONbits.DC1B=0x3;
+        CCP1CONbits.DC1B=0x3;
+        //start 8 bit timer2
+        PIR1bits.TMR1IF=0;
+        PIR2bits.TMR3IF=0;
+        T2CONbits.T2CKPS=1;
+        T2CONbits.TMR2ON=1;
+        while(!PIR1bits.TMR2IF);
+        TRISCbits.RC2=0;
+        TRISCbits.RC1=0;
 	
-        
-
-	TRISC=0b11111111;
-
         OSCCONbits.IRCF0=1;
         OSCCONbits.IRCF1=1;
         OSCCONbits.IRCF2=1;

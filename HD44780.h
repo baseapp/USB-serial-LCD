@@ -17,6 +17,7 @@
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  */
+
 #define LCD_LINE1_POSITION 0x00
 #define LCD_LINE2_POSITION 0x40
 #define LCD_LINE3_POSITION 0x14
@@ -28,6 +29,9 @@
 #define LCD_BL LATCbits.LATC2
 #define LCD_EN LATAbits.LATA4
 #define LCD_RS LATCbits.LATC0
+//contrast
+#define LCD_VO LATCbits.LATC1
+
 
 //setup all LCD control pins
 //D0-3 RB0-3
@@ -58,5 +62,6 @@ void LCD_WriteByteVal(unsigned char c);//write this byte value to LCD as ascii t
 void LCD_CursorPosition(unsigned char c);//set cursor to 0-80 position, with adjustment
 void LCD_Clear(void);//clear LCD and return to positon 0
 void LCD_Home(void); //return to postion 0
+void LCD_Contrast(unsigned char c);
 void LCD_Backlight(unsigned char c); //0 (off) 0< (on)
 void delayMS(const unsigned char delay); //delay x MS
